@@ -1,6 +1,7 @@
 const {UserModel} = require("../model/users.model.js")
 
 const express = require("express")
+const nodemailer = require("nodemailer")
 const jwt = require("jsonwebtoken")
 const bcrypt = require("bcrypt")
 
@@ -18,7 +19,7 @@ usersRouter.post("/signup",async (req,res)=>{
        }else{
         bcrypt.hash(password, 6, async function(err, hash) {
             // Store hash in your password DB.
-            if(err.message){
+            if(err){
                 res.send({"msg":"something went wrong, please login again","err":err.message})
             }else{
                 const users = new UserModel({email,password:hash,name,role})
@@ -37,13 +38,15 @@ usersRouter.post("/login",async(req,res)=>{
     const {email,password} = req.body
     try {
         const user = await UserModel.findOne({email})
+        const {role} =user
+        console.log(role,user._id)
         if(user){
             bcrypt.compare(password, user.password, function(err, result) {
                 // result == tru
                 if(err){
                     res.send("invalid credentials")
                 }else{
-                    const token = jwt.sign({ email}, process.env.secretkey,{expiresIn:"1h"});
+                    const token = jwt.sign({ email,role,"Userid":user._id}, process.env.secretkey,{expiresIn:"1h"});
                     const refeshToken = jwt.sign({ email,id:user._id}, process.env.refreshkey,{expiresIn:"72h"});
 
                     res.status(200).send({"msg":"Login successful","token":token,"refreshtoken":refeshToken})
@@ -74,4 +77,20 @@ usersRouter.get("/freshtoken",(req,res)=>{
         }
     })
 })
+
+const transporter = nodemailer.createTransport({
+    host: 'smtp.ethereal.email',
+    port: 587,
+    auth: {
+        user: 'kiarra.hintz55@ethereal.email',
+        pass: '9yyEAX69F8HD7eu6ah'
+    }
+});
+
+transporter.sendMail({
+    to:"kiarra.hintz55@ethereal.email",
+    from:"utkarshsinha854@gmail.com",
+    subject
+})
+
 module.exports= {usersRouter}

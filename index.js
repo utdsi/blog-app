@@ -1,31 +1,19 @@
 const express = require("express")
 const {connection} = require("./config/db.js")
 const {usersRouter} = require("./route/users.route.js")
+const {postRouter} = require("./route/posts.route.js")
+const {auth} = require("./middleware/authen.js")
 require('dotenv').config()
 const app = express()
 
 app.use(express.json())
 
 app.use("/auth",usersRouter)
-
-app.get("/freshtoken",(req,res)=>{
-
-    const refreshToken = req.headers?.authorization?.split(" ")[1]
-    if(!refreshToken){
-        return res.status(401).send("Please login again")
-    }
-    jwt.verify(refreshToken, process.env.refreshkey, (err, decoded) => {
-        if(err){
-        //err -> whatever the err is    
-            return res.status(401).send("Please login again")
-        }
-        else{
-            const {id} = decoded
-            const newToken = jwt.sign({id}, process.env.secretkey, {expiresIn : 180})
-            return res.send({"token" : newToken})
-        }
-    })
+app.use("/post",auth,postRouter)
+app.get("/",(req,res)=>{
+    res.send("elcome")
 })
+
 app.listen(process.env.port,async()=>{
     try {
         await connection
